@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RecurrenceRule
 {
@@ -13,17 +14,24 @@ namespace RecurrenceRule
 
         private int[] _timesInDay;
 
-        public RecurrenceWeekly(int interval, DateTimeOffset startTime, DayOfWeek[] weekDays = null, int[] timesInDay = null)
+        public RecurrenceWeekly(DateTimeOffset startTime, int interval = 1, DayOfWeek[]? weekDays = null, int[]? timesInDay = null)
         {
-            _interval = interval;
+            if (interval < 1) throw new ArgumentException($"{nameof(interval)} must >= 1", nameof(interval));
+            if (timesInDay != null && !timesInDay.Any()) throw new ArgumentException($"{nameof(timesInDay)} must be null or length > 1");
+            if (timesInDay != null && timesInDay.Any(time => time < 0 || time >= 24 * 60))
+                throw new ArgumentException($"value in {nameof(timesInDay)} must >= 0 or < 24 * 60");
+
             _startTime = startTime;
+            _interval = interval;
             _weekDays = weekDays ?? new[] { startTime.DayOfWeek };
             _timesInDay = timesInDay ?? new[] { startTime.Hour * 60 + startTime.Minute };
         }
 
-        public IEnumerable<DateTimeOffset> GetNextOccurrences(DateTimeOffset baseTime, DateTimeOffset endTime)
+        public IEnumerable<DateTimeOffset> GetOccurrences(DateTimeOffset? baseTime = null, DateTimeOffset? endTime = null)
         {
-            var skipTimes = Math.Floor((baseTime - _startTime).TotalDays / (_interval * 7));
+            baseTime ??= _startTime;
+            endTime ??= DateTimeOffset.MaxValue;
+            var skipTimes = Math.Floor(Math.Max((baseTime.Value - _startTime).TotalDays, 0) / (_interval * 7));
             var now = _startTime.Date.AddDays(-(int)_startTime.DayOfWeek).AddDays(skipTimes * _interval * 7);
             while (true)
             {
@@ -34,7 +42,7 @@ namespace RecurrenceRule
                     {
                         var time = day.AddMinutes(timeOffset);
                         if (time > endTime) yield break;
-                        if (time > _startTime && time > baseTime) yield return time;
+                        if (time >= _startTime && time >= baseTime) yield return time;
                     }
                 }
                 now += TimeSpan.FromDays(_interval * 7);

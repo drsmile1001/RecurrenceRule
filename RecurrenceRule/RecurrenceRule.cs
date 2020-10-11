@@ -5,7 +5,7 @@ namespace RecurrenceRule
 {
     public interface IRecurrenceRule
     {
-        IEnumerable<DateTimeOffset> GetNextOccurrences(DateTimeOffset baseTime, DateTimeOffset endTime);
+        IEnumerable<DateTimeOffset> GetOccurrences(DateTimeOffset? baseTime, DateTimeOffset? endTime);
     }
 }
 
